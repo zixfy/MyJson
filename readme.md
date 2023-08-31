@@ -1,6 +1,6 @@
 ###  MyJson:利用静态反射的C++对象自动序列化库
 
-[![Static Badge](https://img.shields.io/badge/license-MIT-blue?logo=git&logoColor=%20)]() [![Static Badge](https://img.shields.io/badge/C%2B%2B-17-green?logo=cplusplus&logoColor=blue)]() [![Static Badge](https://img.shields.io/badge/cmake-3.22%2B-green?logo=cmake&logoColor=deepskyblue)]() [![Static Badge](https://img.shields.io/badge/compiler-x86_gcc11.3%2B-green?logo=compilerexplorer)]() [![Static Badge](https://img.shields.io/badge/compiler-x86 MSVC19.29%2B-green?logo=compilerexplorer)]() 
+[![Static Badge](https://img.shields.io/badge/license-MIT-blue?logo=git&logoColor=%20)]() [![Static Badge](https://img.shields.io/badge/C%2B%2B-17-green?logo=cplusplus&logoColor=blue)]() [![Static Badge](https://img.shields.io/badge/cmake-3.22%2B-green?logo=cmake&logoColor=deepskyblue)]() [![Static Badge](https://img.shields.io/badge/compiler-x86%20gcc%2011.3+-green?logo=compilerexplorer)]()[![Static Badge](https://img.shields.io/badge/compiler-x86%20MSVC%2019.29%2B-green?logo=compilerexplorer)]() 
 
 ---
 
@@ -63,9 +63,6 @@ more: .todo
 
 ```c++
 #include <json/core.hpp>
-
-// DEF_DATA_CLASS(fk, (int)a, (long)fuck_rust,
-//                (DEF_DATA_CLASS(mama, (float)c, (double)d))kfc);
 using namespace std;
 using namespace json;
 using namespace reflect;
