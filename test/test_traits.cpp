@@ -3,7 +3,7 @@
 //
 
 #include "../include/json/core.hpp"
-using namespace json;
+using namespace MyJson;
 struct J {
   static J from_json (const Json &) {return{};};
 };
@@ -38,9 +38,11 @@ template <typename T> void print(T&& obj) {
 
 DEF_DATA_CLASS(SomeNetClass, (int) aaasdsa, (long) sadas );
 DEF_DATA_CLASS(SomeClass, (std::string) str_mem, (double) f_mem, (SomeNetClass) nested );
+struct G {Json to_json() {return {};}};
 int main() {
   SomeClass f{"nihao", 11.2, {2, 21312}};
   print(f);
+  static_assert(is_json_convertible<G>);
   static_assert(is_native_json_value_type<Null>);
   static_assert(is_native_json_value_type<Integer>);
   static_assert(is_native_json_value_type<Bool>);

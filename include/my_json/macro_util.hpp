@@ -284,14 +284,9 @@
     static constexpr const char *name() {                                      \
       return MACRO_UNWRAP(MACRO_LITERALLY(MYJSON_UNWRAP_NAME(field)));         \
     }                                                                          \
-    template <typename T = _type> static type &get(T &self) {                  \
-      return self.MYJSON_UNWRAP_NAME(field);                                   \
-    }                                                                          \
-    template <typename T = _type> static const type &get(const T &self) {      \
-      return self.MYJSON_UNWRAP_NAME(field);                                   \
-    }                                                                          \
-    template <typename T = _type> static type &&get(T &&self) {                \
-      return std::move(self.MYJSON_UNWRAP_NAME(field));                        \
+    template <typename T>   static decltype(auto) get(T &&self) {                                      \
+      return std::forward<decltype((std::forward<T>(self).MYJSON_UNWRAP_NAME(  \
+          field)))>(std::forward<T>(self).MYJSON_UNWRAP_NAME(field));          \
     }                                                                          \
     static constexpr size_t index() { return _index; }                         \
   };
@@ -309,54 +304,33 @@
     MACRO_UNWRAP(MYJSON_CONCAT_STR(                                            \
         MYJSON_FIELDS_LOOP_, MYJSON_ARG_COUNT(__VA_ARGS__))(MYJSON_FIELD_IMPL, \
                                                             0, __VA_ARGS__))   \
-    json::Json to_json() const & {                                             \
-      json::Object o;                                                          \
-      reflect::for_each_meta(*this, [&o](auto &&_name, auto &&value) {         \
+    MyJson::Json to_json() const & {                                             \
+      MyJson::Object o;                                                          \
+      MyJson::for_each_meta(*this, [&o](auto &&_name, auto &&value) {         \
         o.emplace(_name, std::forward<decltype(value)>(value));                \
       });                                                                      \
       return o;                                                                \
     }                                                                          \
-    json::Json to_json() && {                                                  \
-      json::Object o;                                                          \
-      reflect::for_each_meta(                                                  \
+    MyJson::Json to_json() && {                                                  \
+      MyJson::Object o;                                                          \
+      MyJson::for_each_meta(                                                  \
           std::move(*this), [&o](auto &&_name, auto &&value) {                 \
             o.emplace(_name, std::forward<decltype(value)>(value));            \
           });                                                                  \
       return o;                                                                \
     }                                                                          \
   };                                                                           \
-  template <> auto json::Json::to_type<name>() const & {                       \
+  template <> std::optional<name> MyJson::Json::to_type<name>() const & {                       \
     auto p = std::get_if<Object>(&(this->m_value));                            \
     if (p == nullptr)                                                          \
-      return std::optional<name>{};                                            \
+      return std::nullopt;                                            \
     name ret{};                                                                \
     bool flag = false;                                                         \
-    reflect::for_each_meta(ret, [p, &flag](auto &&_name, auto &&value) {       \
+    MyJson::for_each_meta(ret, [p, &flag](auto &&_name, auto &&value) {       \
       if (p->find(_name) == p->end())                                          \
         flag = true;                                                           \
-      auto opt =                                                               \
+      auto &&opt =                                                             \
           p->at(_name).template to_type<std::decay_t<decltype(value)>>();      \
-      if (!opt.has_value())                                                    \
-        flag = true;                                                           \
-      else                                                                     \
-        value = opt.value();                                                   \
-      if (flag)                                                                \
-        return;                                                                \
-    });                                                                        \
-    if (flag)                                                                  \
-      return std::optional<name>{};                                            \
-    return std::optional<name>{std::move(ret)};                                \
-  };                                                                           \
-  template <> auto json::Json::to_type<name>() && {                            \
-    auto p = std::get_if<Object>(&(this->m_value));                            \
-    if (p == nullptr)                                                          \
-      return std::optional<name>{};                                            \
-    name ret{};                                                                \
-    bool flag = false;                                                         \
-    reflect::for_each_meta(ret, [p, &flag](auto &&_name, auto &&value) {       \
-      if (p->find(_name) == p->end())                                          \
-        flag = true;                                                           \
-      auto opt = std::move(p->at(_name)).template to_type<std::decay_t<decltype(value)>>();      \
       if (!opt.has_value())                                                    \
         flag = true;                                                           \
       else                                                                     \
@@ -365,8 +339,30 @@
         return;                                                                \
     });                                                                        \
     if (flag)                                                                  \
-      return std::optional<name>{};                                            \
-    return std::optional<name>{std::move(ret)};                                \
-  }; // template <> auto json::Json::to_type<name>() const & { return type{}; };
+      return std::nullopt;                                            \
+    return std::optional {std::move(ret)};                                \
+  };                                                                           \
+  template <> std::optional<name> MyJson::Json::to_type<name>() && {                            \
+    auto p = std::get_if<Object>(&(this->m_value));                            \
+    if (p == nullptr)                                                          \
+      return std::nullopt;                                            \
+    name ret{};                                                                \
+    bool flag = false;                                                         \
+    MyJson::for_each_meta(ret, [p, &flag](auto &&_name, auto &&value) {       \
+      if (p->find(_name) == p->end())                                          \
+        flag = true;                                                           \
+      auto &&opt = std::move(p->at(_name))                                     \
+                       .template to_type<std::decay_t<decltype(value)>>();     \
+      if (!opt.has_value())                                                    \
+        flag = true;                                                           \
+      else                                                                     \
+        value = std::move(opt.value());                                        \
+      if (flag)                                                                \
+        return;                                                                \
+    });                                                                        \
+    if (flag)                                                                  \
+      return std::nullopt;                                            \
+    return std::optional {std::move(ret)};                                \
+  }; // template <> auto MyJson::Json::to_type<name>() const & { return type{}; };
 
 #endif // CPP_JSON_PARSER_MACRO_UTIL_HPP

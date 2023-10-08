@@ -5,7 +5,7 @@
 #ifndef CPP_JSON_PARSER_TRAITS_HPP
 #define CPP_JSON_PARSER_TRAITS_HPP
 #include "types.hpp"
-namespace json::detail {
+namespace MyJson::detail {
 template <typename T, typename = void>
 struct is_json_convertible_impl : std::false_type {};
 
@@ -14,7 +14,7 @@ struct is_json_convertible_impl<
     T, std::void_t<decltype(std::declval<T>().to_json())>> : std::true_type {
 
   static_assert(
-      std::is_same_v<json::Json, decltype(std::declval<T>().to_json())>,
+      std::is_same_v<MyJson::Json, decltype(std::declval<T>().to_json())>,
       "oops, T::to_json() must return Json here");
 };
 
@@ -23,10 +23,10 @@ struct is_json_constructible_impl : std::false_type {};
 
 template <typename T>
 struct is_json_constructible_impl<
-    T, std::void_t<decltype(T::from_json(std::declval<json::Json>()))>>
+    T, std::void_t<decltype(T::from_json(std::declval<MyJson::Json>()))>>
     : std::true_type {
   static_assert(
-      std::is_same_v<T, decltype(T::from_json(std::declval<json::Json>()))>,
+      std::is_same_v<T, decltype(T::from_json(std::declval<MyJson::Json>()))>,
       "oops, T::from_json() must return T here");
 };
 
@@ -34,11 +34,11 @@ template <typename, typename> struct is_native_json_value_type_impl {};
 template <typename T, size_t... N>
 struct is_native_json_value_type_impl<T, std::integer_sequence<size_t, N...>> {
   constexpr static inline bool value =
-      (std::is_same_v<T, std::variant_alternative_t<N, json::JsonNode>> || ...);
+      (std::is_same_v<T, std::variant_alternative_t<N, MyJson::JsonNode>> || ...);
 };
 
-} // namespace json::detail
-namespace json {
+} // namespace MyJson::detail
+namespace MyJson {
 
 template <typename T> constexpr static inline bool is_stl_sequence = false;
 template <typename T>
@@ -87,5 +87,5 @@ constexpr static inline bool is_native_json_value_type =
         T, std::make_integer_sequence<size_t,
                                       std::variant_size_v<JsonNode>>>::value;
 
-} // namespace json
+} // namespace MyJson
 #endif // CPP_JSON_PARSER_TRAITS_HPP

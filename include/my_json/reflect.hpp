@@ -9,7 +9,7 @@
 #include <iostream>
 #include "traits.hpp"
 #include "core.hpp"
-namespace reflect {
+namespace MyJson {
 template <typename Meta, typename T, typename F>
 void for_each_meta_impl2(T &&t, F &&f) {
   f(Meta::name(), Meta::get(std::forward<T>(t)));

@@ -1,32 +1,109 @@
 ###  MyJson:利用静态反射的C++对象自动序列化库
 
-[![Static Badge](https://img.shields.io/badge/license-MIT-blue?logo=git&logoColor=%20)]() [![Static Badge](https://img.shields.io/badge/C%2B%2B-17-green?logo=cplusplus&logoColor=blue)]() [![Static Badge](https://img.shields.io/badge/cmake-3.22%2B-green?logo=cmake&logoColor=deepskyblue)]() [![Static Badge](https://img.shields.io/badge/compiler-x86%20gcc%2011.3+-green?logo=compilerexplorer)]()[![Static Badge](https://img.shields.io/badge/compiler-x86%20MSVC%2019.29%2B-green?logo=compilerexplorer)]() 
+[![Static Badge](https://img.shields.io/badge/license-MIT-blue?logo=git&logoColor=%20)]() [![Static Badge](https://img.shields.io/badge/C%2B%2B-17-green?logo=cplusplus&logoColor=blue)]() [![Static Badge](https://img.shields.io/badge/cmake-3.22%2B-green?logo=cmake&logoColor=deepskyblue)]() [![Static Badge](https://img.shields.io/badge/compiler-x86%20gcc%2011.3+-green?logo=compilerexplorer)]() [![Static Badge](https://img.shields.io/badge/compiler-x86%20MSVC%2019.29%2B-green?logo=compilerexplorer)]() 
 
 ---
 
-这是一个面向现代`C++`的轻量级，可读性强的对象序列化方案，核心代码仅`700+`行
+#### Features
 
-本序列化库使用的协议为`json`，通过宏实现了聚合体类型的简单静态反射（侵入式）`json::Json`对象和`DEF_DATA_CLASS`宏定义的类类型、所有`c++17 stl`容器（不包括`std::array`， 因为定长）（可嵌套）、所有基本数值类型之间的转换代码，都使用模板自动生成，并支持容器间的移动语义
+一个面向现代`C++`的轻量级对象序列化方案
 
-使用上，使用`DEF_DATA_CLASS`，仅需几行代码就能实现对象到`json`文本的序列化/反序列化
+本序列化库使用的协议为`Json`，支持以下类型到`Json`的序列化（反序列化）
 
-#### Blog
+1. `C++`基本数值类型、`nullptr_t/nullopt_t`(`Json null`)
+2. `c++17 stl`容器（不包括定长的`std::array`）
+3. 通过静态反射宏`DEF_DATA_CLASS`定义的聚合体
+4. 以上类型的嵌套
+	使用上，使用`DEF_DATA_CLASS`，仅需几行代码就能实现对象到`MyJson`文本的序列化/反序列化
 
-代码设计：
+`Json`对象到其他类型的转换全部支持移动语义以提高性能
 
-.todo
+`Json`对象转换到所保存的原生类型(`Array`,  `Integer`, `Boolean`, `Object`)使用`Json::as_type<T>`
 
-【C++】Json序列化库(1)：  类型设计
+`Json`对象反序列化到其他类型使用`Json::to_type<T>`
 
-【C++】Json序列化库(2) :序列化
+`Json`数据实际中往往动态获取，`Json`对象内部使用`std::variant`多态，使用`std::optional<T>`作为`as_type/to_type`返回值类型，不使用异常
 
-【C++】Json序列化库(3) :反序列化
+#### Usage
 
-【C++】Json序列化库(4): 支持stl容器： 模板简化代码
+**基本：**
 
-【C++】Json序列化库(5): 聚合体自动序列化： 静态反射
+使用静态反射宏定义数据类型
 
-#### Build 
+```c++
+#include <my_json/core.hpp> 
+using namespace std;
+using namespace MyJson;
+
+DEF_DATA_CLASS(Person, (unsigned short)age, (std::string)name,
+               (std::vector<int>)scores);
+```
+
+`list<Person>`到`Json`的序列化
+
+```c++
+list<Person> container0{{24, R"(alice)", {3, 4, 89}},
+                        {17, R"(bob)", {42}},
+                        {18, R"(chaos)", {37, 107, 109, 10007}}};
+Json json{std::move(container0)};
+cout << json << endl;
+//[{"age":24,"name":"alice","scores":[3,4,89]},{"age":17,"name":"bob","scores":[42]},{"age":18,"name":"chaos","scores":[37,107,109,10007]}]
+```
+
+`Json`到`vector<Person>`的反序列化
+
+```c++
+auto container1 = std::move(json).to_type<vector<Person>>().value();
+```
+
+**更多用法：**
+
+`Json`对象结构修改
+
+```c++
+Json json{list<Person>{{24, R"(alice)", {3, 4, 89}},
+                       {17, R"(bob)", {42}},
+                       {18, R"(chaos)", {37, 107, 109, 10007}}}};
+json.as_type<Array>()->get().emplace_back(
+    Person{13, "danny", vector{1, 2, 3}});
+cout << json << endl;
+//[{"age":24,"name":"alice","scores":[3,4,89]},{"age":17,"name":"bob","scores":[42]},{"age":18,"name":"chaos","scores":[37,107,109,10007]},{"age":13,"name":"danny","scores":[1,2,3]}]
+```
+
+从文件读取`Json`，修改并保存
+
+```c++
+filesystem::path file_path = "test.json";
+fstream file;
+file.open(file_path, std::ios::in);
+Json json2 = Json::from_istream(file).value();
+file.close();
+
+auto &json2_as_array = json2.as_type<Array>()->get();
+for (auto &node : json2_as_array) {
+    auto &obj = node.as_type<Object>()->get();
+    auto &scores = obj.at("scores").as_type<Array>()->get();
+    for (auto &s : scores)
+        ++s.as_type<Integer>()->get();
+}
+cout << json2;
+file.open(file_path, ios::out | ios::trunc);
+file.close();
+file.open(file_path, ios::out | ios::app); // Open in append mode
+file << json2;
+file.close();
+```
+
+`test.json`：
+
+```json
+//before
+[{"age":19,"name":"issac","scores":[31,32,33]},{"age":20,"name":"faery","scores":[22,-83]}]
+//after
+[{"age":19,"name":"issac","scores":[32,33,34]},{"age":20,"name":"faery","scores":[23,-82]}]
+```
+
+#### Build
 
 修改`CMakeLists.txt`
 
@@ -46,65 +123,4 @@ cd build
 cmake .. 
 make 
 ```
-
-#### Features
-
-.todo
-
-#### Test
-
-.todo
-
-#### Usage
-
-例子：一个自定义聚合类型`Person`的`vector`到`json`文本的序列化/反序列化
-
-more: .todo
-
-```c++
-#include <json/core.hpp>
-using namespace std;
-using namespace json;
-using namespace reflect;
-
-DEF_DATA_CLASS(Person, (unsigned short) age, (std::string) name,
-               (std::vector<int>) socres);
-int main() {
-  std::vector<Person> ls1{{24, R"(dont say "hello world")", {3, 4, 89}},
-                          {17, R"(alice)", {42}},
-                          {18, R"(B/o\b)", {37, 107, 109, 10007}}};
-  Json j{std::move(ls1)};
-  // stl, JSON_DATA_CLASS serialized to Json
-
-  string s{j.to_json_text()};
-  cout << s << endl;
-  // Json to serialized json-formatted string
-  // output:[{"age":24,"name":"dont say \"hello
-  // world\"","socres":[3,4,89]},{"age":17,"name":"alice","socres":[42]},{"age":18,"name":"B\/o\\b","socres":[37,107,109,10007]}]
-
-  auto ls2 =
-      Json::from_json_text(s).value().to_type<std::vector<Person>>().value();
-  for (auto &p : ls2) {
-    cout <<  p.name << ":" << endl;
-    cout << " - age=" << p.age << endl;
-    cout << " - scores=";
-    std::copy(p.socres.begin(), p.socres.end(),
-              std::ostream_iterator<int>(cout, ", "));
-    cout << endl;
-  }
-  //  Json text deserialized to stl/JSON_DATA_CLASS
-  // ouput:
-  // dont say "hello world":
-  // - age=24
-  // - scores=3, 4, 89,
-  // alice:
-  // - age=17
-  // - scores=42,
-  // B/o\b:
-  // - age=18
-  // - scores=37, 107, 109, 10007,
-}
-```
-
-
 

@@ -1,62 +1,63 @@
 #include <any>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <iterator>
-#include <json/core.hpp>
-
-// DEF_DATA_CLASS(fk, (int)a, (long)fuck_rust,
-//                (DEF_DATA_CLASS(mama, (float)c, (double)d))kfc);
+#include <my_json/core.hpp>
 using namespace std;
-using namespace json;
-using namespace reflect;
+using namespace MyJson;
 
-DEF_DATA_CLASS(Person, (unsigned short) age, (std::string) name,
-               (std::vector<int>) socres);
+DEF_DATA_CLASS(Person, (unsigned short)age, (std::string)name,
+               (std::vector<int>)scores);
 int main() {
-  std::vector<Person> ls1{{24, R"(dont say "hello world")", {3, 4, 89}},
-                          {17, R"(alice)", {42}},
-                          {18, R"(B/o\b)", {37, 107, 109, 10007}}};
-  Json j{std::move(ls1)};
-  // stl, JSON_DATA_CLASS serialized to Json
 
-  string s{j.to_json_text()};
-  cout << s << endl;
-  // Json to serialized json-formatted string
-  // output:[{"age":24,"name":"dont say \"hello
-  // world\"","socres":[3,4,89]},{"age":17,"name":"alice","socres":[42]},{"age":18,"name":"B\/o\\b","socres":[37,107,109,10007]}]
+  //  list<Person> container0{{24, R"(alice)", {3, 4, 89}},
+  //                          {17, R"(bob)", {42}},
+  //                          {18, R"(chaos)", {37, 107, 109, 10007}}};
+  //  Json json{std::move(container0)};
+  //  cout << json << endl;
+  //  //
+  //  [{"age":24,"name":"alice","scores":[3,4,89]},{"age":17,"name":"bob","scores":[42]},{"age":18,"name":"chaos","scores":[37,107,109,10007]}]
+  //  // STL container, JSON_DATA_CLASS serialized to Json
+  //
+  //  auto container1 = std::move(json).to_type<vector<Person>>().value();
 
-  auto ls2 =
-      Json::from_json_text(s).value().to_type<std::vector<Person>>().value();
-  for (auto &p : ls2) {
-    cout <<  p.name << ":" << endl;
-    cout << " - age=" << p.age << endl;
-    cout << " - scores=";
-    std::copy(p.socres.begin(), p.socres.end(),
-              std::ostream_iterator<int>(cout, ", "));
-    cout << endl;
+  //  Array &json_as_array = json.as_type<Array>().value();
+  //  Array &json_as_array = json.as_type<Array>().value();
+
+  //  json_as_array.emplace_back(Person{13, "danny", vector{1, 2, 3}});
+  Json json{list<Person>{{24, R"(alice)", {3, 4, 89}},
+                         {17, R"(bob)", {42}},
+                         {18, R"(chaos)", {37, 107, 109, 10007}}}};
+  json.as_type<Array>()->get().emplace_back(
+      Person{13, "danny", vector{1, 2, 3}});
+  cout << json << endl;
+  auto container2 = std::move(json).to_type<vector<Person>>().value();
+  cout << json << endl;
+  for (auto &p : container2) {
+    cout << p.name << " aged " << p.age << " with scores ";
+    std::copy(p.scores.begin(), p.scores.end(),
+              ostream_iterator<int>(cout, ", ")),
+        cout << endl;
   }
-  //  Json text deserialized to stl/JSON_DATA_CLASS
-  // ouput:
-  // dont say "hello world":
-  // - age=24
-  // - scores=3, 4, 89,
-  // alice:
-  // - age=17
-  // - scores=42,
-  // B/o\b:
-  // - age=18
-  // - scores=37, 107, 109, 10007,
-  auto &as_arr = j.as_type<Array>()->get();
-  (as_arr[1].as_type<Object>()->get())["age"] = 18;
-  // json node modification
 
-  auto new_alice = as_arr[1].to_type<Person>().value();
-  //  Json convert to stl/JSON_DATA_CLASS
+   filesystem::path file_path = "test.json";
+  fstream file;
+  file.open(file_path, std::ios::in);
+  Json json2 = Json::from_istream(file).value();
+  file.close();
 
-  cout << endl << "new alice:" << endl;
-  cout << "age=" << new_alice.age << endl;
-  cout << "name=" << new_alice.name << endl;
-  cout << "scores=";
-  std::copy(new_alice.socres.begin(), new_alice.socres.end(),
-            std::ostream_iterator<int>(cout, ", "));
+  auto &json2_as_array = json2.as_type<Array>()->get();
+  for (auto &node : json2_as_array) {
+    auto &obj = node.as_type<Object>()->get();
+    auto &scores = obj.at("scores").as_type<Array>()->get();
+    for (auto &s : scores)
+      ++s.as_type<Integer>()->get();
+  }
+  cout << json2;
+  file.open(file_path, ios::out | ios::trunc);
+  file.close();
+  file.open(file_path, ios::out | ios::app); // Open in append mode
+  file << json2;
+  file.close();
 }

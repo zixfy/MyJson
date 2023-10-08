@@ -1,9 +1,10 @@
 //
 // Created by wwww on 2023/8/28.
 //
-#include <json/core.hpp>
-namespace json {
-void raw_text_to_json_stream(std::ostream &os, std::string_view sv) {
+#include <my_json/core.hpp>
+#include <sstream>
+namespace MyJson {
+void text_raw_to_ostream_json(std::ostream &os, std::string_view sv) {
   for (auto c : sv)
     switch (c) {
     case '\\': {
@@ -44,16 +45,8 @@ void raw_text_to_json_stream(std::ostream &os, std::string_view sv) {
     }
     }
 }
-void raw_text_to_json_stream(std::ostream &os, const char *s) {
-  raw_text_to_json_stream(os, std::string_view{s});
-}
-std::string raw_text_to_json_text(const std::string &s) {
-  std::stringstream ss;
-  raw_text_to_json_stream(ss, s);
-  return ss.str();
-}
 
-bool json_text_to_raw_text_inplace(std::string &s) {
+bool text_json_to_raw_inplace(std::string &s) {
   if (s.empty())
     return true;
   if (s.back() == '\\' && s.size() > 1 && s[s.size() - 2] != '\\')
@@ -118,14 +111,6 @@ bool json_text_to_raw_text_inplace(std::string &s) {
   return true;
 }
 
-std::string json_text_to_raw_text(const std::string &s) {
-  std::string s_copy{s};
-  auto b = json_text_to_raw_text_inplace(s_copy);
-  if (!b)
-    throw std::runtime_error{"bad json_string_to_raw_string"};
-  return s_copy;
-}
-
 auto JsonParser::skip_blank() -> void {
   while (m_pivot < m_text.size() && std::isspace(m_text[m_pivot]))
     ++m_pivot;
@@ -172,7 +157,7 @@ auto JsonParser::parse_string() -> std::optional<JsonNode> {
     return {};
   std::string s = std::string{m_text.substr(m_pivot, nxt_pivot - m_pivot)};
   m_pivot = nxt_pivot + 1; // "
-  auto b = json_text_to_raw_text_inplace(s);
+  auto b = text_json_to_raw_inplace(s);
   if (!b)
     return {};
   return {std::move(s)};
@@ -180,12 +165,19 @@ auto JsonParser::parse_string() -> std::optional<JsonNode> {
 
 auto JsonParser::parse_numeric() -> std::optional<JsonNode> {
   bool is_float = false;
+  bool has_neg = false;
   auto nxt_pivot = m_pivot;
   while (nxt_pivot < m_text.size()) {
     if (m_text[nxt_pivot] == 'e' || m_text[nxt_pivot] == '.')
       is_float = true;
-    else if (!std::isdigit(m_text[nxt_pivot]))
-      break;
+    else if (!std::isdigit(m_text[nxt_pivot])) {
+      if (m_text[nxt_pivot] == '-') {
+        if (has_neg)
+          break;
+        has_neg = true;
+      } else
+        break;
+    }
     ++nxt_pivot;
   }
   auto number = std::string{m_text.substr(m_pivot, nxt_pivot - m_pivot)};
@@ -287,7 +279,7 @@ auto JsonParser::parse_node() -> std::optional<JsonNode> {
   }
 }
 
-std::optional<Json> JsonParser::get() {
+auto JsonParser::get() -> std::optional<Json> {
   skip_blank();
   auto node = parse_node();
   if (!node.has_value()) {
@@ -296,4 +288,4 @@ std::optional<Json> JsonParser::get() {
   return Json{std::move(node.value())};
 }
 
-} // namespace json
+} // namespace MyJson

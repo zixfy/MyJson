@@ -15,7 +15,7 @@
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
-namespace json {
+namespace MyJson {
 class Json;
 class JsonParser;
 using Null = std::monostate;
