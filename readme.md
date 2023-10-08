@@ -1,4 +1,4 @@
-###  MyJson:利用静态反射的C++对象自动序列化库
+###  MyJson: C++对象序列化库
 
 [![Static Badge](https://img.shields.io/badge/license-MIT-blue?logo=git&logoColor=%20)]() [![Static Badge](https://img.shields.io/badge/C%2B%2B-17-green?logo=cplusplus&logoColor=blue)]() [![Static Badge](https://img.shields.io/badge/cmake-3.22%2B-green?logo=cmake&logoColor=deepskyblue)]() [![Static Badge](https://img.shields.io/badge/compiler-x86%20gcc%2011.3+-green?logo=compilerexplorer)]() [![Static Badge](https://img.shields.io/badge/compiler-x86%20MSVC%2019.29%2B-green?logo=compilerexplorer)]() 
 
@@ -14,11 +14,11 @@
 2. `c++17 stl`容器（不包括定长的`std::array`）
 3. 通过静态反射宏`DEF_DATA_CLASS`定义的聚合体
 4. 以上类型的嵌套
-	使用上，使用`DEF_DATA_CLASS`，仅需几行代码就能实现对象到`MyJson`文本的序列化/反序列化
+	使用上，使用`DEF_DATA_CLASS`，仅需单行代码就能实现对象到`MyJson`文本的序列化/反序列化
 
 `Json`对象到其他类型的转换全部支持移动语义以提高性能
 
-`Json`对象转换到所保存的原生类型(`Array`,  `Integer`, `Boolean`, `Object`)使用`Json::as_type<T>`
+`Json`对象转换到所保存的原生类型(`Array`,  `Integer`, `Boolean`, `Object`等)使用`Json::as_type<T>`
 
 `Json`对象反序列化到其他类型使用`Json::to_type<T>`
 
