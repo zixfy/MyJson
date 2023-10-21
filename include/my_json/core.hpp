@@ -197,13 +197,14 @@ public:
       if (p == nullptr)
         return std::nullopt;
       return static_cast<T>(*p);
-    } else {
-      static_assert(std::is_floating_point_v<T>,
-                    "can find a specialized func of Json::to_type for T");
+    } else if constexpr (std::is_floating_point_v<T>) { 
       auto p = std::get_if<Float>(&(this->m_value));
       if (p == nullptr)
         return std::nullopt;
       return static_cast<T>(*p);
+    }
+    else {
+        return T::from_json(*this);
     }
   }
 
@@ -267,13 +268,13 @@ public:
       if (p == nullptr)
         return std::nullopt;
       return static_cast<T>(*p);
-    } else {
-      static_assert(std::is_floating_point_v<T>,
-                    "can find a specialized func of Json::to_type for T");
+    } else if constexpr (std::is_floating_point_v<T>) {
       auto p = std::get_if<Float>(&(this->m_value));
       if (p == nullptr)
         return std::nullopt;
       return static_cast<T>(*p);
+    } else {
+        return T::from_json(std::move(*this));
     }
   }
 };

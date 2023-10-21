@@ -18,7 +18,7 @@
 
 `Json`对象到其他类型的转换全部支持移动语义以提高性能
 
-`Json`对象转换到所保存的原生类型(`Array`,  `Integer`, `Boolean`, `Object`等)使用`Json::as_type<T>`
+`Json`对象转换到所保存的原生类型(`Array`,  `Integer`, `Boolean`, `Object`等)使用`Json::as_type<T>`，返回`std::optional<std::reference_wrapper<T>>`或`std::optional<std::reference_wrapper<const T>>`(由调用的`Json`对象是否`const`决定)
 
 `Json`对象反序列化到其他类型使用`Json::to_type<T>`
 
